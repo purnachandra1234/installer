@@ -96,7 +96,7 @@ resource "openstack_networking_port_v2" "lb_port" {
 
   admin_state_up     = "true"
   network_id         = "${openstack_networking_network_v2.openshift-private.id}"
-  security_group_ids = ["${openstack_networking_secgroup_v2.master.id}"]
+  security_group_ids = ["${openstack_networking_secgroup_v2.api.id}"]
   tags               = ["${format("tectonicClusterID=%s", var.cluster_id)}"]
 
   fixed_ip {
