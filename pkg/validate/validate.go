@@ -16,12 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-var (
-	dockerBridgeCIDR = func() *net.IPNet {
-		_, cidr, _ := net.ParseCIDR("172.17.0.0/16")
-		return cidr
-	}()
-)
+// FIXME: ipv6 equivalent?
+// var (
+// 	dockerBridgeCIDR = func() *net.IPNet {
+// 		_, cidr, _ := net.ParseCIDR("172.17.0.0/16")
+// 		return cidr
+// 	}()
+// )
 
 // CABundle checks if the given string contains valid certificate(s) and returns an error if not.
 func CABundle(v string) error {
@@ -109,8 +110,8 @@ func ClusterName(v string) error {
 
 // SubnetCIDR checks if the given IP net is a valid CIDR.
 func SubnetCIDR(cidr *net.IPNet) error {
-	if cidr.IP.To4() == nil {
-		return errors.New("must use IPv4")
+	if cidr.IP.To4() != nil {
+		return errors.New("must use IPv6")
 	}
 	if cidr.IP.IsUnspecified() {
 		return errors.New("address must be specified")
@@ -119,9 +120,10 @@ func SubnetCIDR(cidr *net.IPNet) error {
 	if nip.String() != cidr.IP.String() {
 		return fmt.Errorf("invalid network address. got %s, expecting %s", cidr.String(), (&net.IPNet{IP: nip, Mask: cidr.Mask}).String())
 	}
-	if DoCIDRsOverlap(cidr, dockerBridgeCIDR) {
-		return fmt.Errorf("overlaps with default Docker Bridge subnet (%v)", cidr.String())
-	}
+	// FIXME: ipv6 equivalent?
+	// if DoCIDRsOverlap(cidr, dockerBridgeCIDR) {
+	//         return fmt.Errorf("overlaps with default Docker Bridge subnet (%v)", cidr.String())
+	//}
 	return nil
 }
 

@@ -54,17 +54,23 @@ func TestSubnetCIDR(t *testing.T) {
 		cidr   string
 		expErr string
 	}{
-		{"0.0.0.0/32", "address must be specified"},
-		{"1.2.3.4/0", "invalid network address. got 1.2.3.4/0, expecting 0.0.0.0/0"},
-		{"1.2.3.4/1", "invalid network address. got 1.2.3.4/1, expecting 0.0.0.0/1"},
-		{"1.2.3.4/31", ""},
-		{"1.2.3.4/32", ""},
-		{"0:0:0:0:0:1:102:304/116", "must use IPv4"},
-		{"0:0:0:0:0:ffff:102:304/116", "invalid network address. got 1.2.3.4/20, expecting 1.2.0.0/20"},
-		{"172.17.0.0/20", "overlaps with default Docker Bridge subnet (172.17.0.0/20)"},
-		{"172.0.0.0/8", "overlaps with default Docker Bridge subnet (172.0.0.0/8)"},
-		{"255.255.255.255/1", "invalid network address. got 255.255.255.255/1, expecting 128.0.0.0/1"},
-		{"255.255.255.255/32", ""},
+		{"172.30.0.0/16", "must use IPv6"},
+		{"::/64", "address must be specified"},
+		{"::1/0", "invalid network address. got ::1/0, expecting ::/0"},
+		{"::2/1", "invalid network address. got ::2/1, expecting ::/1"},
+
+		// FIXME:: ipv6 equivalents
+		// {"0.0.0.0/32", "address must be specified"},
+		// {"1.2.3.4/0", "invalid network address. got 1.2.3.4/0, expecting 0.0.0.0/0"},
+		// {"1.2.3.4/1", "invalid network address. got 1.2.3.4/1, expecting 0.0.0.0/1"},
+		// {"1.2.3.4/31", ""},
+		// {"1.2.3.4/32", ""},
+		// {"0:0:0:0:0:1:102:304/116", "must use IPv4"},
+		// {"0:0:0:0:0:ffff:102:304/116", "invalid network address. got 1.2.3.4/20, expecting 1.2.0.0/20"},
+		// {"172.17.0.0/20", "overlaps with default Docker Bridge subnet (172.17.0.0/20)"},
+		// {"172.0.0.0/8", "overlaps with default Docker Bridge subnet (172.0.0.0/8)"},
+		// {"255.255.255.255/1", "invalid network address. got 255.255.255.255/1, expecting 128.0.0.0/1"},
+		// {"255.255.255.255/32", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.cidr, func(t *testing.T) {
