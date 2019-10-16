@@ -33,12 +33,12 @@ func validInstallConfig() *types.InstallConfig {
 		BaseDomain: "test-domain",
 		Networking: &types.Networking{
 			NetworkType:    "OpenShiftSDN",
-			MachineCIDR:    ipnet.MustParseCIDR("10.0.0.0/16"),
-			ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("172.30.0.0/16")},
+			MachineCIDR:    ipnet.MustParseCIDR("fd00:a00::/112"),
+			ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("fd00:ac1e::/112")},
 			ClusterNetwork: []types.ClusterNetworkEntry{
 				{
-					CIDR:       *ipnet.MustParseCIDR("192.168.1.0/24"),
-					HostPrefix: 28,
+					CIDR:       *ipnet.MustParseCIDR("fd00:c0a8:1::/120"),
+					HostPrefix: 124,
 				},
 			},
 		},
@@ -94,13 +94,13 @@ func validBareMetalPlatform() *baremetal.Platform {
 		LibvirtURI:              "qemu+tcp://192.168.122.1/system",
 		BootstrapProvisioningIP: "127.0.0.1",
 		ClusterProvisioningIP:   "192.168.111.1",
-		Hosts:                  []*baremetal.Host{},
-		ExternalBridge:         iface[0].Name,
-		ProvisioningBridge:     iface[0].Name,
-		DefaultMachinePlatform: &baremetal.MachinePool{},
-		APIVIP:                 "10.0.0.5",
-		IngressVIP:             "10.0.0.4",
-		DNSVIP:                 "10.0.0.2",
+		Hosts:                   []*baremetal.Host{},
+		ExternalBridge:          iface[0].Name,
+		ProvisioningBridge:      iface[0].Name,
+		DefaultMachinePlatform:  &baremetal.MachinePool{},
+		APIVIP:                  "fd00:a00::5",
+		IngressVIP:              "fd00:a00::4",
+		DNSVIP:                  "fd00:a00::2",
 	}
 }
 
@@ -199,33 +199,33 @@ func TestValidateInstallConfig(t *testing.T) {
 			name: "invalid service network",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.ServiceNetwork[0] = *ipnet.MustParseCIDR("13.0.128.0/16")
+				c.Networking.ServiceNetwork[0] = *ipnet.MustParseCIDR("fd00:d00::8000/64")
 				return c
 			}(),
-			expectedError: `^networking\.serviceNetwork\[0\]: Invalid value: "13\.0\.128\.0/16": invalid network address. got 13\.0\.128\.0/16, expecting 13\.0\.0\.0/16$`,
+			expectedError: `^networking\.serviceNetwork\[0\]: Invalid value: "fd00:d00::8000/64": invalid network address. got fd00:d00::8000/64, expecting fd00:d00::/64$`,
 		},
 		{
 			name: "overlapping service network and machine cidr",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.ServiceNetwork[0] = *ipnet.MustParseCIDR("10.0.2.0/24")
+				c.Networking.ServiceNetwork[0] = *ipnet.MustParseCIDR("fd00:a00::100/120")
 				return c
 			}(),
-			expectedError: `^networking\.serviceNetwork\[0\]: Invalid value: "10\.0\.2\.0/24": service network must not overlap with machineCIDR$`,
+			expectedError: `^networking\.serviceNetwork\[0\]: Invalid value: "fd00:a00::100/120": service network must not overlap with machineCIDR$`,
 		},
 		{
 			name: "overlapping service network and service network",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
 				c.Networking.ServiceNetwork = []ipnet.IPNet{
-					*ipnet.MustParseCIDR("13.0.0.0/16"),
-					*ipnet.MustParseCIDR("13.0.2.0/24"),
+					*ipnet.MustParseCIDR("fd00:d00::/64"),
+					*ipnet.MustParseCIDR("fd00:d00::1:0/112"),
 				}
 
 				return c
 			}(),
 			// also triggers the only-one-service-network validation
-			expectedError: `^\[networking\.serviceNetwork\[1\]: Invalid value: "13\.0\.2\.0/24": service network must not overlap with service network 0, networking\.serviceNetwork: Invalid value: "13\.0\.0\.0/16, 13\.0\.2\.0/24": only one service network can be specified]$`,
+			expectedError: `^\[networking\.serviceNetwork\[1\]: Invalid value: "fd00:d00::1:0/112": service network must not overlap with service network 0, networking\.serviceNetwork: Invalid value: "fd00:d00::/64, fd00:d00::1:0/112": only one service network can be specified]$`,
 		},
 		{
 			name: "missing machine cidr",
@@ -240,59 +240,59 @@ func TestValidateInstallConfig(t *testing.T) {
 			name: "invalid machine cidr",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.MachineCIDR = ipnet.MustParseCIDR("11.0.128.0/16")
+				c.Networking.MachineCIDR = ipnet.MustParseCIDR("fd00:b00::8000/64")
 				return c
 			}(),
-			expectedError: `^networking\.machineCIDR: Invalid value: "11\.0\.128\.0/16": invalid network address. got 11\.0\.128\.0/16, expecting 11\.0\.0\.0/16$`,
+			expectedError: `^networking\.machineCIDR: Invalid value: "fd00:b00::8000/64": invalid network address. got fd00:b00::8000/64, expecting fd00:b00::/64$`,
 		},
 		{
 			name: "invalid cluster network",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.ClusterNetwork = []types.ClusterNetworkEntry{{CIDR: *ipnet.MustParseCIDR("12.0.128.0/16"), HostPrefix: 23}}
+				c.Networking.ClusterNetwork = []types.ClusterNetworkEntry{{CIDR: *ipnet.MustParseCIDR("fd00:c00::8000/64"), HostPrefix: 119}}
 				return c
 			}(),
-			expectedError: `^networking\.clusterNetwork\[0]\.cidr: Invalid value: "12\.0\.128\.0/16": invalid network address. got 12\.0\.128\.0/16, expecting 12\.0\.0\.0/16$`,
+			expectedError: `^networking\.clusterNetwork\[0]\.cidr: Invalid value: "fd00:c00::8000/64": invalid network address. got fd00:c00::8000/64, expecting fd00:c00::/64$`,
 		},
 		{
 			name: "overlapping cluster network and machine cidr",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.ClusterNetwork[0].CIDR = *ipnet.MustParseCIDR("10.0.3.0/24")
+				c.Networking.ClusterNetwork[0].CIDR = *ipnet.MustParseCIDR("fd00:a00::200/120")
 				return c
 			}(),
-			expectedError: `^networking\.clusterNetwork\[0]\.cidr: Invalid value: "10\.0\.3\.0/24": cluster network must not overlap with machine CIDR$`,
+			expectedError: `^networking\.clusterNetwork\[0]\.cidr: Invalid value: "fd00:a00::200/120": cluster network must not overlap with machine CIDR$`,
 		},
 		{
 			name: "overlapping cluster network and service network",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.ClusterNetwork[0].CIDR = *ipnet.MustParseCIDR("172.30.2.0/24")
+				c.Networking.ClusterNetwork[0].CIDR = *ipnet.MustParseCIDR("fd00:ac1e::100/120")
 				return c
 			}(),
-			expectedError: `^networking\.clusterNetwork\[0]\.cidr: Invalid value: "172\.30\.2\.0/24": cluster network must not overlap with service network 0$`,
+			expectedError: `^networking\.clusterNetwork\[0]\.cidr: Invalid value: "fd00:ac1e::100/120": cluster network must not overlap with service network 0$`,
 		},
 		{
 			name: "overlapping cluster network and cluster network",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
 				c.Networking.ClusterNetwork = []types.ClusterNetworkEntry{
-					{CIDR: *ipnet.MustParseCIDR("12.0.0.0/16"), HostPrefix: 23},
-					{CIDR: *ipnet.MustParseCIDR("12.0.3.0/24"), HostPrefix: 25},
+					{CIDR: *ipnet.MustParseCIDR("fd00:b00::/112"), HostPrefix: 119},
+					{CIDR: *ipnet.MustParseCIDR("fd00:b00::300/120"), HostPrefix: 121},
 				}
 				return c
 			}(),
-			expectedError: `^networking\.clusterNetwork\[1]\.cidr: Invalid value: "12\.0\.3\.0/24": cluster network must not overlap with cluster network 0$`,
+			expectedError: `^networking\.clusterNetwork\[1]\.cidr: Invalid value: "fd00:b00::300/120": cluster network must not overlap with cluster network 0$`,
 		},
 		{
 			name: "cluster network host prefix too large",
 			installConfig: func() *types.InstallConfig {
 				c := validInstallConfig()
-				c.Networking.ClusterNetwork[0].CIDR = *ipnet.MustParseCIDR("192.168.1.0/24")
-				c.Networking.ClusterNetwork[0].HostPrefix = 23
+				c.Networking.ClusterNetwork[0].CIDR = *ipnet.MustParseCIDR("fd00:c0a8::/120")
+				c.Networking.ClusterNetwork[0].HostPrefix = 119
 				return c
 			}(),
-			expectedError: `^networking\.clusterNetwork\[0]\.hostPrefix: Invalid value: 23: cluster network host subnetwork prefix must not be larger size than CIDR 192.168.1.0/24$`,
+			expectedError: `^networking\.clusterNetwork\[0]\.hostPrefix: Invalid value: 119: cluster network host subnetwork prefix must not be larger size than CIDR fd00:c0a8::/120$`,
 		},
 		{
 			name: "missing control plane",
@@ -484,7 +484,7 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform.BareMetal.APIVIP = ""
 				return c
 			}(),
-			expectedError: `^\[platform\.baremetal\.apiVIP: Invalid value: "": '' is not a valid IP, platform\.baremetal\.apiVIP: Invalid value: "": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet]$`,
+			expectedError: `^\[platform\.baremetal\.apiVIP: Invalid value: "": '' is not a valid IP, platform\.baremetal\.apiVIP: Invalid value: "": the virtual IP is expected to be in fd00:a00::/112 subnet]$`,
 		},
 		{
 			name: "baremetal API VIP not an IP",
@@ -496,7 +496,7 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform.BareMetal.APIVIP = "test"
 				return c
 			}(),
-			expectedError: `^\[platform\.baremetal\.apiVIP: Invalid value: "test": 'test' is not a valid IP, platform\.baremetal\.apiVIP: Invalid value: "test": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet]$`,
+			expectedError: `^\[platform\.baremetal\.apiVIP: Invalid value: "test": 'test' is not a valid IP, platform\.baremetal\.apiVIP: Invalid value: "test": the virtual IP is expected to be in fd00:a00::/112 subnet]$`,
 		},
 		{
 			name: "baremetal API VIP set to an incorrect value",
@@ -505,10 +505,10 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform = types.Platform{
 					BareMetal: validBareMetalPlatform(),
 				}
-				c.Platform.BareMetal.APIVIP = "10.1.0.5"
+				c.Platform.BareMetal.APIVIP = "fd00:a00::1:5"
 				return c
 			}(),
-			expectedError: `^platform\.baremetal\.apiVIP: Invalid value: "10\.1\.0\.5": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet$`,
+			expectedError: `^platform\.baremetal\.apiVIP: Invalid value: "fd00:a00::1:5": the virtual IP is expected to be in fd00:a00::/112 subnet$`,
 		},
 		{
 			name: "baremetal DNS VIP not an IP",
@@ -520,7 +520,7 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform.BareMetal.DNSVIP = "test"
 				return c
 			}(),
-			expectedError: `^\[platform\.baremetal\.dnsVIP: Invalid value: "test": 'test' is not a valid IP, platform\.baremetal\.dnsVIP: Invalid value: "test": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet]$`,
+			expectedError: `^\[platform\.baremetal\.dnsVIP: Invalid value: "test": 'test' is not a valid IP, platform\.baremetal\.dnsVIP: Invalid value: "test": the virtual IP is expected to be in fd00:a00::/112 subnet]$`,
 		},
 		{
 			name: "baremetal DNS VIP set to an incorrect value",
@@ -529,10 +529,10 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform = types.Platform{
 					BareMetal: validBareMetalPlatform(),
 				}
-				c.Platform.BareMetal.DNSVIP = "10.1.0.6"
+				c.Platform.BareMetal.DNSVIP = "fd00:a00::1:6"
 				return c
 			}(),
-			expectedError: `^platform\.baremetal\.dnsVIP: Invalid value: "10\.1\.0\.6": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet$`,
+			expectedError: `^platform\.baremetal\.dnsVIP: Invalid value: "fd00:a00::1:6": the virtual IP is expected to be in fd00:a00::/112 subnet$`,
 		},
 		{
 			name: "baremetal Ingress VIP not an IP",
@@ -544,7 +544,7 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform.BareMetal.IngressVIP = "test"
 				return c
 			}(),
-			expectedError: `^\[platform\.baremetal\.ingressVIP: Invalid value: "test": 'test' is not a valid IP, platform\.baremetal\.ingressVIP: Invalid value: "test": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet]$`,
+			expectedError: `^\[platform\.baremetal\.ingressVIP: Invalid value: "test": 'test' is not a valid IP, platform\.baremetal\.ingressVIP: Invalid value: "test": the virtual IP is expected to be in fd00:a00::/112 subnet]$`,
 		},
 		{
 			name: "baremetal Ingress VIP set to an incorrect value",
@@ -553,10 +553,10 @@ func TestValidateInstallConfig(t *testing.T) {
 				c.Platform = types.Platform{
 					BareMetal: validBareMetalPlatform(),
 				}
-				c.Platform.BareMetal.IngressVIP = "10.1.0.7"
+				c.Platform.BareMetal.IngressVIP = "fd00:a00::1:7"
 				return c
 			}(),
-			expectedError: `^platform\.baremetal\.ingressVIP: Invalid value: "10\.1\.0\.7": the virtual IP is expected to be in 10\.0\.0\.0/16 subnet$`,
+			expectedError: `^platform\.baremetal\.ingressVIP: Invalid value: "fd00:a00::1:7": the virtual IP is expected to be in fd00:a00::/112 subnet$`,
 		}, {
 			name: "valid vsphere platform",
 			installConfig: func() *types.InstallConfig {

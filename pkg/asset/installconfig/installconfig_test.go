@@ -65,13 +65,13 @@ func TestInstallConfigGenerate_FillsInDefaults(t *testing.T) {
 		},
 		BaseDomain: "test-domain",
 		Networking: &types.Networking{
-			MachineCIDR:    ipnet.MustParseCIDR("10.0.0.0/16"),
+			MachineCIDR:    ipnet.MustParseCIDR("fd00:0a00::/112"),
 			NetworkType:    "OpenShiftSDN",
-			ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("172.30.0.0/16")},
+			ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("fd00:ac1e::/112")},
 			ClusterNetwork: []types.ClusterNetworkEntry{
 				{
-					CIDR:       *ipnet.MustParseCIDR("10.128.0.0/14"),
-					HostPrefix: 23,
+					CIDR:       *ipnet.MustParseCIDR("fd00:0a80::/110"),
+					HostPrefix: 119,
 				},
 			},
 		},
@@ -126,13 +126,13 @@ pullSecret: "{\"auths\":{\"example.com\":{\"auth\":\"authorization value\"}}}"
 				},
 				BaseDomain: "test-domain",
 				Networking: &types.Networking{
-					MachineCIDR:    ipnet.MustParseCIDR("10.0.0.0/16"),
+					MachineCIDR:    ipnet.MustParseCIDR("fd00:0a00::/112"),
 					NetworkType:    "OpenShiftSDN",
-					ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("172.30.0.0/16")},
+					ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("fd00:ac1e::/112")},
 					ClusterNetwork: []types.ClusterNetworkEntry{
 						{
-							CIDR:       *ipnet.MustParseCIDR("10.128.0.0/14"),
-							HostPrefix: 23,
+							CIDR:       *ipnet.MustParseCIDR("fd00:0a80::/110"),
+							HostPrefix: 119,
 						},
 					},
 				},
@@ -207,13 +207,13 @@ network:
 				},
 				BaseDomain: "test-domain",
 				Networking: &types.Networking{
-					MachineCIDR:    ipnet.MustParseCIDR("10.0.0.0/16"),
+					MachineCIDR:    ipnet.MustParseCIDR("fd00:0a00::/112"),
 					NetworkType:    "OpenShiftSDN",
-					ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("172.30.0.0/16")},
+					ServiceNetwork: []ipnet.IPNet{*ipnet.MustParseCIDR("fd00:ac1e::/112")},
 					ClusterNetwork: []types.ClusterNetworkEntry{
 						{
-							CIDR:       *ipnet.MustParseCIDR("10.128.0.0/14"),
-							HostPrefix: 23,
+							CIDR:       *ipnet.MustParseCIDR("fd00:0a80::/110"),
+							HostPrefix: 119,
 						},
 					},
 				},
